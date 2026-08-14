@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { hasAsset, queueAssets } from '../assetLoader';
 import { sfx } from '../sound';
+import { clearSave, readSave } from '../save';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -55,18 +56,20 @@ export class TitleScene extends Phaser.Scene {
       stroke: '#10161f', strokeThickness: 4,
     }).setOrigin(0.5);
 
-    const btn = this.add.rectangle(W / 2, H * 0.78, 240, 64, 0x2e86de)
-      .setInteractive({ useHandCursor: true });
-    this.add.text(W / 2, H * 0.78, '출근하기', {
-      fontFamily: 'sans-serif', fontSize: '26px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    btn.on('pointerover', () => btn.setFillStyle(0x4aa3f0));
-    btn.on('pointerout', () => btn.setFillStyle(0x2e86de));
-    btn.on('pointerdown', () => {
-      sfx.click();
-      this.scene.start('Game');
-    });
+    const save = readSave();
+    if (save) {
+      this.makeTitleButton(W / 2, H * 0.73, 320, 58, 0x2e86de, `💾 이어서 출근하기 (${save.day}일차)`, '22px', () => {
+        this.scene.start('Game', { resume: true });
+      });
+      this.makeTitleButton(W / 2, H * 0.85, 200, 40, 0x445060, '처음부터 시작', '17px', () => {
+        clearSave();
+        this.scene.start('Game', { resume: false });
+      });
+    } else {
+      this.makeTitleButton(W / 2, H * 0.78, 240, 64, 0x2e86de, '출근하기', '26px', () => {
+        this.scene.start('Game', { resume: false });
+      });
+    }
 
     const link = this.add.text(W / 2, H * 0.93, '🔗 보건의료정보관리사가 궁금하다면? (협회 홈페이지)', {
       fontFamily: 'sans-serif', fontSize: '14px', color: '#9fb8d0',
@@ -75,5 +78,21 @@ export class TitleScene extends Phaser.Scene {
     link.on('pointerover', () => link.setColor('#d8e8f8'));
     link.on('pointerout', () => link.setColor('#9fb8d0'));
     link.on('pointerdown', () => window.open('https://khima.or.kr', '_blank'));
+  }
+
+  private makeTitleButton(
+    x: number, y: number, w: number, h: number,
+    color: number, label: string, fontSize: string, onClick: () => void,
+  ) {
+    const btn = this.add.rectangle(x, y, w, h, color).setInteractive({ useHandCursor: true });
+    this.add.text(x, y, label, {
+      fontFamily: 'sans-serif', fontSize, color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    btn.on('pointerover', () => btn.setAlpha(0.85));
+    btn.on('pointerout', () => btn.setAlpha(1));
+    btn.on('pointerdown', () => {
+      sfx.click();
+      onClick();
+    });
   }
 }

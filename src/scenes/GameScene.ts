@@ -7,6 +7,7 @@ import {
 import { hasAsset, playBgm, queueAssets } from '../assetLoader';
 import { isMuted, setMuted, sfx } from '../sound';
 import { downloadResultCard } from '../share';
+import { clearSave, readSave, writeSave } from '../save';
 
 interface Chart {
   id: number;
@@ -59,7 +60,7 @@ export class GameScene extends Phaser.Scene {
     queueAssets(this);
   }
 
-  create() {
+  create(data: { resume?: boolean } = {}) {
     if (hasAsset(this, 'bg_game')) {
       this.add.image(480, 270, 'bg_game').setDisplaySize(960, 540).setAlpha(0.45);
     }
@@ -70,12 +71,25 @@ export class GameScene extends Phaser.Scene {
     this.totalEarned = 0;
     this.gradeIdx = 0;
     this.owned = { staff: 0, coffee: 0, emr: 0, privacy: 0 };
+    if (data.resume) {
+      const save = readSave();
+      if (save) {
+        this.day = save.day;
+        this.money = save.money;
+        this.rep = save.rep;
+        this.totalEarned = save.totalEarned;
+        this.gradeIdx = Phaser.Math.Clamp(save.gradeIdx, 0, GRADES.length - 1);
+        this.owned = { staff: 0, coffee: 0, emr: 0, privacy: 0, ...save.owned };
+        this.chartSeq = save.chartSeq;
+      }
+    }
     this.createHud();
     this.queuePanel = this.add.container(0, 0);
     this.workPanel = this.add.container(0, 0);
     this.popup = this.add.container(0, 0).setDepth(80);
     this.overlay = this.add.container(0, 0).setDepth(100);
     this.startDay();
+    if (data.resume) this.toast(`💾 저장된 게임을 불러왔어요 — ${this.day}일차부터 계속!`, true);
   }
 
   private isAuditDay(): boolean {
@@ -126,6 +140,12 @@ export class GameScene extends Phaser.Scene {
     this.updateHud();
     this.renderQueue();
     this.renderWorkPanel();
+
+    // 하루 시작 시점 자동 저장 (중간에 끄면 이 날 아침부터 재개)
+    writeSave({
+      day: this.day, money: this.money, rep: this.rep, totalEarned: this.totalEarned,
+      gradeIdx: this.gradeIdx, owned: { ...this.owned }, chartSeq: this.chartSeq,
+    });
   }
 
   private tick() {
@@ -649,13 +669,14 @@ export class GameScene extends Phaser.Scene {
     };
 
     if (this.rep <= 0) {
+      clearSave(); // 해고되면 저장도 초기화
       this.overlay.add(this.add.text(480, 448, '평판이 바닥났습니다… 병원에서 해고됐어요 😢', {
         fontFamily: FONT, fontSize: '15px', color: '#ff6b6b',
       }).setOrigin(0.5));
       this.makeButton(this.overlay, 300, 483, 180, 38, 0x445060, '📸 결과 카드 저장', shareNow, '14px');
       this.makeButton(this.overlay, 540, 483, 220, 38, 0x2e86de, '다시 도전하기', () => {
         this.overlay.removeAll(true);
-        this.scene.restart();
+        this.scene.restart({ resume: false });
       });
     } else {
       this.makeButton(this.overlay, 270, 465, 180, 46, 0x445060, '📸 결과 카드 저장', shareNow, '14px');
