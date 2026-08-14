@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" data-orientation-lock="pending">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
@@ -15,12 +15,14 @@
         padding: 0;
         background: #10161f;
         height: 100%;
+        min-height: 100dvh;
         overflow: hidden;
         touch-action: none;
       }
       #game {
         width: 100%;
         height: 100%;
+        min-height: 100dvh;
         display: grid;
         place-items: center;
         padding: env(safe-area-inset-top) env(safe-area-inset-right)
@@ -46,6 +48,35 @@
         font-size: 18px;
         line-height: 1.8;
       }
+      #immersive-start {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 11;
+        background: linear-gradient(180deg, #10161f, #1e3a5c);
+        color: #ffffff;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-family: sans-serif;
+      }
+      #immersive-start button {
+        min-width: 260px;
+        min-height: 64px;
+        border: 0;
+        border-radius: 10px;
+        background: #2e86de;
+        color: #ffffff;
+        font-size: 20px;
+        font-weight: 700;
+        box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+      }
+      #immersive-start p {
+        margin: 0 0 22px;
+        color: #c8d8e8;
+        font-size: 16px;
+        line-height: 1.6;
+      }
       .sr-only {
         position: absolute;
         width: 1px;
@@ -58,15 +89,24 @@
         border: 0;
       }
       @media (orientation: portrait) and (max-width: 700px) {
-        #rotate {
+        html[data-orientation-lock="pending"] #immersive-start {
+          display: flex;
+        }
+        html[data-orientation-lock="unsupported"] #rotate {
           display: flex;
         }
       }
     </style>
-    <script type="module" crossorigin src="./assets/index-C6KOjqqq.js"></script>
+    <script type="module" crossorigin src="./assets/index-DyT-vjRT.js"></script>
   </head>
   <body>
     <p id="game-help" class="sr-only">차트 목록은 숫자 1부터 6, 반송은 R, 코딩은 C, 감염병 신고 절차 지원은 I, 뒤로 가기는 Escape 키를 사용합니다. 민원 창에서는 1번이 발급, 2번이 거절입니다.</p>
+    <div id="immersive-start">
+      <div>
+        <p>화면에 맞춰 크게 플레이할 수 있도록<br />전체화면과 가로 모드를 시작합니다.</p>
+        <button id="immersive-start-button" type="button">⛶ 전체화면으로 시작</button>
+      </div>
+    </div>
     <div id="game"></div>
     <div id="rotate">📱<br />화면을 가로로 돌려서<br />플레이해 주세요!</div>
   </body>
