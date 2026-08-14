@@ -652,13 +652,13 @@ export class GameScene extends Phaser.Scene {
       this.overlay.add(this.add.text(480, 448, '평판이 바닥났습니다… 병원에서 해고됐어요 😢', {
         fontFamily: FONT, fontSize: '15px', color: '#ff6b6b',
       }).setOrigin(0.5));
-      this.makeButton(this.overlay, 300, 483, 170, 38, 0x445060, '📸 결과 카드', shareNow, '15px');
+      this.makeButton(this.overlay, 300, 483, 180, 38, 0x445060, '📸 결과 카드 저장', shareNow, '14px');
       this.makeButton(this.overlay, 540, 483, 220, 38, 0x2e86de, '다시 도전하기', () => {
         this.overlay.removeAll(true);
         this.scene.restart();
       });
     } else {
-      this.makeButton(this.overlay, 270, 465, 170, 46, 0x445060, '📸 결과 카드', shareNow, '15px');
+      this.makeButton(this.overlay, 270, 465, 180, 46, 0x445060, '📸 결과 카드 저장', shareNow, '14px');
       this.makeButton(this.overlay, 540, 465, 280, 46, 0x2e86de, '🛒 투자하고 출근 준비 →', () => this.showShop());
     }
   }
