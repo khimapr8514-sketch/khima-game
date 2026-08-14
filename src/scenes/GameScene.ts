@@ -8,6 +8,7 @@ import { hasAsset, playBgm, queueAssets } from '../assetLoader';
 import { isMuted, setMuted, sfx } from '../sound';
 import { downloadResultCard } from '../share';
 import { clearSave, readSave, writeSave } from '../save';
+import { fs, UI_SCALE } from '../ui';
 
 interface Chart {
   id: number;
@@ -329,18 +330,29 @@ export class GameScene extends Phaser.Scene {
 
   private createHud() {
     this.add.rectangle(480, 24, 960, 48, 0x0d1420);
-    const style = { fontFamily: FONT, fontSize: '17px', color: '#ffffff' };
-    this.hud = {
-      day: this.add.text(16, 14, '', style),
-      time: this.add.text(120, 14, '', style),
-      money: this.add.text(230, 14, '', style),
-      rep: this.add.text(420, 14, '', style),
-      grade: this.add.text(560, 14, '', { ...style, color: '#ffd97b' }),
-      audit: this.add.text(740, 14, '', { ...style, color: '#ff8b8b' }),
-    };
+    const style = { fontFamily: FONT, fontSize: fs(17), color: '#ffffff' };
+    // 모바일(폰트 확대)에서는 한 줄에 다 안 들어가므로 두 줄로 배치
+    const compact = UI_SCALE > 1;
+    this.hud = compact
+      ? {
+        day: this.add.text(16, 2, '', style),
+        time: this.add.text(150, 2, '', style),
+        money: this.add.text(290, 2, '', style),
+        rep: this.add.text(16, 25, '', style),
+        grade: this.add.text(170, 25, '', { ...style, color: '#ffd97b' }),
+        audit: this.add.text(360, 25, '', { ...style, color: '#ff8b8b' }),
+      }
+      : {
+        day: this.add.text(16, 14, '', style),
+        time: this.add.text(120, 14, '', style),
+        money: this.add.text(230, 14, '', style),
+        rep: this.add.text(420, 14, '', style),
+        grade: this.add.text(560, 14, '', { ...style, color: '#ffd97b' }),
+        audit: this.add.text(740, 14, '', { ...style, color: '#ff8b8b' }),
+      };
 
     const muteBtn = this.add.text(936, 24, isMuted() ? '🔇' : '🔊', {
-      fontFamily: FONT, fontSize: '20px',
+      fontFamily: FONT, fontSize: fs(20),
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     muteBtn.on('pointerdown', () => {
       setMuted(!isMuted());
@@ -373,7 +385,7 @@ export class GameScene extends Phaser.Scene {
     this.queuePanel.removeAll(true);
     this.queuePanel.add(this.add.rectangle(180, 294, 340, 472, 0x1b2838));
     this.queuePanel.add(this.add.text(30, 66, `🗂 퇴원 차트 대기열 (${this.queue.length}건)`, {
-      fontFamily: FONT, fontSize: '18px', color: '#9fb8d0', fontStyle: 'bold',
+      fontFamily: FONT, fontSize: fs(18), color: '#9fb8d0', fontStyle: 'bold',
     }));
 
     const visible = this.queue.slice(0, 6);
@@ -394,22 +406,22 @@ export class GameScene extends Phaser.Scene {
       });
       const info = this.chartLabel(chart);
       const label = this.add.text(45, y - 18, `${info.icon} 차트 #${chart.id}  ${chart.patient} (${chart.age}세)`, {
-        fontFamily: FONT, fontSize: '16px', color: '#ffffff',
+        fontFamily: FONT, fontSize: fs(16), color: '#ffffff',
       });
       const sub = this.add.text(45, y + 4, info.sub, {
-        fontFamily: FONT, fontSize: '13px', color: info.subColor,
+        fontFamily: FONT, fontSize: fs(13), color: info.subColor,
       });
       this.queuePanel.add([card, label, sub]);
     });
 
     if (this.queue.length > 6) {
       this.queuePanel.add(this.add.text(180, 128 + 6 * 66 - 10, `…외 ${this.queue.length - 6}건 대기 중`, {
-        fontFamily: FONT, fontSize: '14px', color: '#6f8aa5',
+        fontFamily: FONT, fontSize: fs(14), color: '#6f8aa5',
       }).setOrigin(0.5, 0));
     }
     if (this.queue.length === 0) {
       this.queuePanel.add(this.add.text(180, 280, '모든 차트 처리 완료! 🎉', {
-        fontFamily: FONT, fontSize: '17px', color: '#7bd88f',
+        fontFamily: FONT, fontSize: fs(17), color: '#7bd88f',
       }).setOrigin(0.5));
     }
   }
@@ -423,14 +435,14 @@ export class GameScene extends Phaser.Scene {
     const chart = this.selected;
     if (!chart) {
       this.workPanel.add(this.add.text(660, 280, '왼쪽에서 차트를 선택해 검토를 시작하세요', {
-        fontFamily: FONT, fontSize: '18px', color: '#6f8aa5',
+        fontFamily: FONT, fontSize: fs(18), color: '#6f8aa5',
       }).setOrigin(0.5));
       return;
     }
 
     const icon = this.chartLabel(chart).icon;
     this.workPanel.add(this.add.text(400, 76, `${icon} 차트 #${chart.id} 검토`, {
-      fontFamily: FONT, fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: FONT, fontSize: fs(20), color: '#ffffff', fontStyle: 'bold',
     }));
 
     const missing = chart.incomplete;
@@ -449,7 +461,7 @@ export class GameScene extends Phaser.Scene {
       lines.push('', `⚠ 법정감염병 의심 — 신고 기한 ${chart.reportLeft}초!`);
     }
     this.workPanel.add(this.add.text(420, 112, lines.join('\n'), {
-      fontFamily: FONT, fontSize: '15px', color: '#c8d8e8', lineSpacing: 4,
+      fontFamily: FONT, fontSize: fs(15), color: '#c8d8e8', lineSpacing: 4,
     }));
 
     // 행동 버튼 (차트 유형별)
@@ -460,11 +472,11 @@ export class GameScene extends Phaser.Scene {
         () => this.onReport(chart));
     } else if (chart.kind === 'cancer') {
       this.makeButton(this.workPanel, 540, 430, 220, 48, 0xc0632b, '↩ 의사에게 반송',
-        () => this.onReturn(chart), '16px');
+        () => this.onReturn(chart), fs(16));
       this.makeButton(this.workPanel, 790, 430, 220, 48, 0x2e8b57, '⌨ 코딩 진행',
-        () => this.renderCodingPanel(chart, false), '16px');
+        () => this.renderCodingPanel(chart, false), fs(16));
       this.makeButton(this.workPanel, 665, 492, 340, 48, 0x8e44ad, '🎗 암등록 후 코딩',
-        () => this.renderCodingPanel(chart, true), '16px');
+        () => this.renderCodingPanel(chart, true), fs(16));
     } else {
       this.makeButton(this.workPanel, 540, 460, 220, 54, 0xc0632b, '↩ 의사에게 반송',
         () => this.onReturn(chart));
@@ -478,13 +490,13 @@ export class GameScene extends Phaser.Scene {
     this.workPanel.add(this.add.rectangle(660, 294, 560, 472, 0x1b2838));
     const title = registered ? `🎗 암등록 완료 → 질병분류 코딩` : `⌨ 질병분류 코딩 — 차트 #${chart.id}`;
     this.workPanel.add(this.add.text(400, 80, title, {
-      fontFamily: FONT, fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: FONT, fontSize: fs(20), color: '#ffffff', fontStyle: 'bold',
     }));
     this.workPanel.add(this.add.text(660, 150, `진단명: ${chart.diagnosis.name}`, {
-      fontFamily: FONT, fontSize: '19px', color: '#ffd97b',
+      fontFamily: FONT, fontSize: fs(19), color: '#ffd97b',
     }).setOrigin(0.5));
     this.workPanel.add(this.add.text(660, 190, '올바른 질병분류 코드를 선택하세요', {
-      fontFamily: FONT, fontSize: '15px', color: '#8aa2ba',
+      fontFamily: FONT, fontSize: fs(15), color: '#8aa2ba',
     }).setOrigin(0.5));
 
     // 정답 1 + 오답 (EMR 업그레이드 시 오답 1개, 기본 2개)
@@ -497,15 +509,15 @@ export class GameScene extends Phaser.Scene {
     ]);
     options.forEach((opt, i) => {
       this.makeButton(this.workPanel, 660, 250 + i * 70, 360, 56, 0x27405c,
-        `${opt.code}  (${opt.name})`, () => this.onCode(chart, opt.code, registered), '16px');
+        `${opt.code}  (${opt.name})`, () => this.onCode(chart, opt.code, registered), fs(16));
     });
     if (this.owned.emr > 0) {
       this.workPanel.add(this.add.text(660, 250 + options.length * 70 - 20, '💻 EMR 자동 추천으로 선택지가 줄었어요', {
-        fontFamily: FONT, fontSize: '13px', color: '#7bd88f',
+        fontFamily: FONT, fontSize: fs(13), color: '#7bd88f',
       }).setOrigin(0.5));
     }
 
-    this.makeButton(this.workPanel, 660, 490, 160, 40, 0x445060, '← 뒤로', () => this.renderWorkPanel(), '14px');
+    this.makeButton(this.workPanel, 660, 490, 160, 40, 0x445060, '← 뒤로', () => this.renderWorkPanel(), fs(14));
   }
 
   // ── 사본발급 민원 팝업 ─────────────────────────────────────
@@ -519,14 +531,14 @@ export class GameScene extends Phaser.Scene {
     this.popup.add(this.add.rectangle(660, 290, 560, 400, 0x2c2440).setInteractive());
     this.popup.add(this.add.rectangle(660, 116, 560, 52, 0x1f1830));
     this.popup.add(this.add.text(660, 116, '🪪 사본발급 민원이 도착했어요!', {
-      fontFamily: FONT, fontSize: '19px', color: '#ffd97b', fontStyle: 'bold',
+      fontFamily: FONT, fontSize: fs(19), color: '#ffd97b', fontStyle: 'bold',
     }).setOrigin(0.5));
 
     this.popup.add(this.add.text(660, 168, `“의무기록 사본을 발급해 주세요.”`, {
-      fontFamily: FONT, fontSize: '16px', color: '#ffffff',
+      fontFamily: FONT, fontSize: fs(16), color: '#ffffff',
     }).setOrigin(0.5));
     this.popup.add(this.add.text(660, 200, `— ${req.who}`, {
-      fontFamily: FONT, fontSize: '15px', color: '#c8b8e8',
+      fontFamily: FONT, fontSize: fs(15), color: '#c8b8e8',
     }).setOrigin(0.5));
 
     let docX = 430;
@@ -537,17 +549,17 @@ export class GameScene extends Phaser.Scene {
     }
     const docLines = req.docs.map((d) => `  · ${d}`).join('\n');
     this.popup.add(this.add.text(docX, 230, `제출한 서류:\n${docLines}`, {
-      fontFamily: FONT, fontSize: '15px', color: '#c8d8e8', lineSpacing: 6,
+      fontFamily: FONT, fontSize: fs(15), color: '#c8d8e8', lineSpacing: 6,
     }));
 
     if (this.owned.privacy > 0 && req.problem) {
       this.popup.add(this.add.text(660, 360, `🔒 교육 힌트: ${req.problem}`, {
-        fontFamily: FONT, fontSize: '13px', color: '#ff9b9b',
+        fontFamily: FONT, fontSize: fs(13), color: '#ff9b9b',
         wordWrap: { width: 520 },
       }).setOrigin(0.5));
     } else if (this.owned.privacy > 0) {
       this.popup.add(this.add.text(660, 360, '🔒 교육 힌트: 서류에 문제가 없어 보여요', {
-        fontFamily: FONT, fontSize: '13px', color: '#9fd0b8',
+        fontFamily: FONT, fontSize: fs(13), color: '#9fd0b8',
       }).setOrigin(0.5));
     }
 
@@ -603,7 +615,7 @@ export class GameScene extends Phaser.Scene {
     this.overlay.add(this.add.rectangle(480, 270, 620, 460, 0x1b2838));
 
     this.overlay.add(this.add.text(480, 70, `📊 ${this.day}일차 업무 결산`, {
-      fontFamily: FONT, fontSize: '25px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: FONT, fontSize: fs(25), color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5));
 
     const s = this.stat;
@@ -614,7 +626,7 @@ export class GameScene extends Phaser.Scene {
       `💰 자금 ₩${this.money.toLocaleString()}  ⭐ 평판 ${this.rep}  🏥 ${GRADES[this.gradeIdx].name}`,
     ];
     this.overlay.add(this.add.text(480, 108, rows.join('\n'), {
-      fontFamily: FONT, fontSize: '16px', color: '#c8d8e8', align: 'center', lineSpacing: 8,
+      fontFamily: FONT, fontSize: fs(16), color: '#c8d8e8', align: 'center', lineSpacing: 8,
     }).setOrigin(0.5, 0));
 
     let y = 210;
@@ -624,18 +636,18 @@ export class GameScene extends Phaser.Scene {
       this.overlay.add(this.add.text(480, y, pass
         ? `🔍 인증평가 통과! 보너스 +₩${BALANCE.auditReward}, 평판 +${BALANCE.auditRepGain}`
         : `🔍 인증평가 탈락… 실수 ${this.mistakes}건 (허용 ${BALANCE.auditMaxMistakes}건), 평판 -${BALANCE.auditRepLoss}`, {
-        fontFamily: FONT, fontSize: '15px', color: pass ? '#7bd88f' : '#ff8b8b', fontStyle: 'bold',
+        fontFamily: FONT, fontSize: fs(15), color: pass ? '#7bd88f' : '#ff8b8b', fontStyle: 'bold',
       }).setOrigin(0.5));
       y += 56;
     }
     if (gradeUp) {
       this.overlay.add(this.add.rectangle(480, y, 540, 46, 0x4a3d1f));
       this.overlay.add(this.add.text(480, y, `🏥 병원 등급 상승 → ${GRADES[this.gradeIdx].name}!`, {
-        fontFamily: FONT, fontSize: '16px', color: '#ffd97b', fontStyle: 'bold',
+        fontFamily: FONT, fontSize: fs(16), color: '#ffd97b', fontStyle: 'bold',
       }).setOrigin(0.5));
       y += 40;
       this.overlay.add(this.add.text(480, y, gradeUp, {
-        fontFamily: FONT, fontSize: '13px', color: '#e8d8a8',
+        fontFamily: FONT, fontSize: fs(13), color: '#e8d8a8',
       }).setOrigin(0.5));
       y += 40;
     }
@@ -645,13 +657,13 @@ export class GameScene extends Phaser.Scene {
     this.overlay.add(this.add.rectangle(480, factY, 540, 76, 0x24354a));
     this.overlay.add(this.add.text(480, factY,
       `💡 실제로는 이런 일이에요\n${JOB_FACTS[(this.day - 1) % JOB_FACTS.length]}`, {
-      fontFamily: FONT, fontSize: '13px', color: '#9fd0b8', align: 'center', lineSpacing: 5,
+      fontFamily: FONT, fontSize: fs(13), color: '#9fd0b8', align: 'center', lineSpacing: 5,
     }).setOrigin(0.5));
 
     // 다음 인증평가 예고
     if (!this.isAuditDay() && (this.day + 1) % BALANCE.auditEvery === 0 && this.rep > 0) {
       this.overlay.add(this.add.text(480, factY + 56, `⚠ 내일은 의료기관 인증평가일! 실수를 ${BALANCE.auditMaxMistakes}건 이하로 줄이세요!`, {
-        fontFamily: FONT, fontSize: '14px', color: '#ffb86b', fontStyle: 'bold',
+        fontFamily: FONT, fontSize: fs(14), color: '#ffb86b', fontStyle: 'bold',
       }).setOrigin(0.5));
     }
 
@@ -671,15 +683,15 @@ export class GameScene extends Phaser.Scene {
     if (this.rep <= 0) {
       clearSave(); // 해고되면 저장도 초기화
       this.overlay.add(this.add.text(480, 448, '평판이 바닥났습니다… 병원에서 해고됐어요 😢', {
-        fontFamily: FONT, fontSize: '15px', color: '#ff6b6b',
+        fontFamily: FONT, fontSize: fs(15), color: '#ff6b6b',
       }).setOrigin(0.5));
-      this.makeButton(this.overlay, 300, 483, 180, 38, 0x445060, '📸 결과 카드 저장', shareNow, '14px');
+      this.makeButton(this.overlay, 300, 483, 180, 38, 0x445060, '📸 결과 카드 저장', shareNow, fs(14));
       this.makeButton(this.overlay, 540, 483, 220, 38, 0x2e86de, '다시 도전하기', () => {
         this.overlay.removeAll(true);
         this.scene.restart({ resume: false });
       });
     } else {
-      this.makeButton(this.overlay, 270, 465, 180, 46, 0x445060, '📸 결과 카드 저장', shareNow, '14px');
+      this.makeButton(this.overlay, 270, 465, 180, 46, 0x445060, '📸 결과 카드 저장', shareNow, fs(14));
       this.makeButton(this.overlay, 540, 465, 280, 46, 0x2e86de, '🛒 투자하고 출근 준비 →', () => this.showShop());
     }
   }
@@ -690,10 +702,10 @@ export class GameScene extends Phaser.Scene {
     this.overlay.add(this.add.rectangle(480, 270, 620, 460, 0x1b2838));
 
     this.overlay.add(this.add.text(480, 72, '🛒 투자 상점', {
-      fontFamily: FONT, fontSize: '24px', color: '#ffffff', fontStyle: 'bold',
+      fontFamily: FONT, fontSize: fs(24), color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5));
     this.overlay.add(this.add.text(480, 106, `보유 자금: ₩${this.money.toLocaleString()}`, {
-      fontFamily: FONT, fontSize: '16px', color: '#ffd97b',
+      fontFamily: FONT, fontSize: fs(16), color: '#ffd97b',
     }).setOrigin(0.5));
 
     const positions: [number, number][] = [[338, 195], [622, 195], [338, 320], [622, 320]];
@@ -721,14 +733,14 @@ export class GameScene extends Phaser.Scene {
       }
       this.overlay.add(card);
       this.overlay.add(this.add.text(x, y - 38, up.name, {
-        fontFamily: FONT, fontSize: '15px', color: soldOut ? '#7a8a9a' : '#ffffff', fontStyle: 'bold',
+        fontFamily: FONT, fontSize: fs(15), color: soldOut ? '#7a8a9a' : '#ffffff', fontStyle: 'bold',
       }).setOrigin(0.5));
       this.overlay.add(this.add.text(x, y - 4, up.desc, {
-        fontFamily: FONT, fontSize: '12px', color: soldOut ? '#5a6a7a' : '#a8c0d8', align: 'center', lineSpacing: 3,
+        fontFamily: FONT, fontSize: fs(12), color: soldOut ? '#5a6a7a' : '#a8c0d8', align: 'center', lineSpacing: 3,
       }).setOrigin(0.5));
       this.overlay.add(this.add.text(x, y + 38,
         soldOut ? `보유 완료 (${count}/${up.max})` : `₩${up.cost.toLocaleString()}  (보유 ${count}/${up.max})`, {
-        fontFamily: FONT, fontSize: '13px', color: soldOut ? '#7bd88f' : '#ffd97b',
+        fontFamily: FONT, fontSize: fs(13), color: soldOut ? '#7bd88f' : '#ffd97b',
       }).setOrigin(0.5));
     });
 
@@ -744,7 +756,7 @@ export class GameScene extends Phaser.Scene {
   private makeButton(
     parent: Phaser.GameObjects.Container,
     x: number, y: number, w: number, h: number,
-    color: number, label: string, onClick: () => void, fontSize = '18px',
+    color: number, label: string, onClick: () => void, fontSize = fs(18),
   ) {
     const btn = this.add.rectangle(x, y, w, h, color).setInteractive({ useHandCursor: true });
     const text = this.add.text(x, y, label, {
@@ -761,7 +773,7 @@ export class GameScene extends Phaser.Scene {
     // 연속 토스트가 겹치지 않게 살짝 어긋나게 표시
     this.toastY = this.toastY === 510 ? 478 : 510;
     const t = this.add.text(480, this.toastY, msg, {
-      fontFamily: FONT, fontSize: '16px', color: good ? '#7bd88f' : '#ff8b8b',
+      fontFamily: FONT, fontSize: fs(16), color: good ? '#7bd88f' : '#ff8b8b',
       backgroundColor: '#0d1420', padding: { x: 14, y: 8 },
     }).setOrigin(0.5).setDepth(90);
     this.tweens.add({
